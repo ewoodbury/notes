@@ -124,6 +124,7 @@ wifi.powersave = 2
 
 - **Power Manager → Display: "Blank after" = Never** (AC + battery)
 - **Screensaver: disabled** (auto-lock off; manual `xflock4` still available)
+- **XFCE compositor: disabled** on Sep 7 for an i915 page-flip isolation soak test (`xfconf-query -c xfwm4 -p /general/use_compositing -s false`)
 
 ### 2.7 Not modified / defaults kept
 
@@ -201,6 +202,7 @@ findmnt /                                          # btrfs subvol=/@ (NOT .snaps
 - **2026-08-30 → 09-05** — 5.5 days stable. Lid-resume black screen reported; fixed with `mem_sleep_default=s2idle`.
 - **2026-09-05** — Crash #3 (idle, 5.5-day uptime). LTS default boot pursued (`ENABLE_SORT=yes` discovered as the missing piece); `libata.force=1.00:nolpm` added. Crashes #4 and #5 → kernel ruled out.
 - **2026-09-06** — memtest86+ 2 passes clean (RAM ruled out). Crash #6 (no ghostty, REISUB dead) → ghostty ruled out. Research: 15-cc6xx M.2 slot is **SATA-only**; BIOS F.22, line EOL. Applied full idle-PM shutdown: `intel_idle.max_cstate=3 pcie_aspm=off`, WiFi powersave off, screen blanking/screensaver disabled. **Soak test started Sep 6 ~23:58.**
+- **2026-09-07** — Observed `kworker/u33:3+i915_flip` (PID 14654) stuck in `D` state for ~24 minutes with no matching kernel error. Disabling XFCE compositing made the worker disappear immediately; direct Intel rendering remained accelerated. This is the strongest evidence so far for an XFCE compositor/DRM page-flip interaction. Compositing is left disabled for the soak test; root-only i915 error-state and SMART checks remain pending.
 
 ---
 
