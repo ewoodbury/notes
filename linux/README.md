@@ -177,7 +177,7 @@ findmnt /                                          # btrfs subvol=/@ (NOT .snaps
 | RAM instability | memtest86+ 7.20: **2 full passes, 0 errors** (Sep 6). Mixed-stick config (4+8 GB) was the top suspect |
 | OOM / memory pressure | 3.5/12 GB used, 11.6 GB zram unused at all times |
 | Overheating | ~50 °C idle, no thermal events in any log |
-| Disk / SMR IO stalls | Crashes occur idle; SMART perfect; logs show no ata stalls. (SMR still causes UI stalls during installs — separate QoL issue) |
+| Disk / SMR IO stalls | Crashes occur idle; SMART passed with 0 realloc/pending/offline-uncorrectable/CRC sectors and no logged errors. Device Statistics retains 5 reported uncorrectable errors and 3 command-completion resets, so the disk is healthy-looking rather than perfect. (SMR still causes UI stalls during installs — separate QoL issue) |
 | i915 PSR / display C-states | Mitigated Aug 30 → uptime jumped 20 min → 5.5 days (these WERE a real component) |
 | SATA LPM | Disabled (`nolpm`); crash #6 still occurred |
 | ghostty (GPU-accelerated terminal) | Crash #6 with no ghostty. **Exonerated** |
@@ -192,9 +192,10 @@ findmnt /                                          # btrfs subvol=/@ (NOT .snaps
 
 ### 3.5 Current hypotheses (ranked)
 
-1. **HP EC/ACPI firmware wedge** (display/backlight/idle path) — fits broken ACPI methods, silent platform-level hang, Windows-vs-Linux asymmetry. **Test: BIOS flash to F.23+ if available**
-2. **Board-level degradation** (VRM/caps, 2017-era hardware) — unfalsifiable in software; outcome of soak test + BIOS flash informs this
-3. Remaining idle-power interaction (deep C-states / ASPM / WiFi doze) — **all now disabled, soak test in progress**
+1. **XFCE compositor/i915 DRM page-flip interaction** — `kworker/u33:3+i915_flip` remained in `D` state for ~24 minutes; disabling XFCE compositing made it disappear immediately while direct Intel rendering remained accelerated. The underlying eDP/firmware trigger is still unknown.
+2. **HP EC/ACPI firmware wedge** (display/backlight/idle path) — fits broken ACPI methods, silent platform-level hang, Windows-vs-Linux asymmetry. **Test: BIOS flash to F.23+ if available**
+3. **Board-level degradation** (VRM/caps, 2017-era hardware) — unfalsifiable in software; outcome of soak test + BIOS flash informs this
+4. Remaining idle-power interaction (deep C-states / ASPM / WiFi doze) — **all now disabled, soak test in progress**
 
 ### 3.6 Investigation log (dated)
 
@@ -202,7 +203,7 @@ findmnt /                                          # btrfs subvol=/@ (NOT .snaps
 - **2026-08-30 → 09-05** — 5.5 days stable. Lid-resume black screen reported; fixed with `mem_sleep_default=s2idle`.
 - **2026-09-05** — Crash #3 (idle, 5.5-day uptime). LTS default boot pursued (`ENABLE_SORT=yes` discovered as the missing piece); `libata.force=1.00:nolpm` added. Crashes #4 and #5 → kernel ruled out.
 - **2026-09-06** — memtest86+ 2 passes clean (RAM ruled out). Crash #6 (no ghostty, REISUB dead) → ghostty ruled out. Research: 15-cc6xx M.2 slot is **SATA-only**; BIOS F.22, line EOL. Applied full idle-PM shutdown: `intel_idle.max_cstate=3 pcie_aspm=off`, WiFi powersave off, screen blanking/screensaver disabled. **Soak test started Sep 6 ~23:58.**
-- **2026-09-07** — Observed `kworker/u33:3+i915_flip` (PID 14654) stuck in `D` state for ~24 minutes with no matching kernel error. Disabling XFCE compositing made the worker disappear immediately; direct Intel rendering remained accelerated. This is the strongest evidence so far for an XFCE compositor/DRM page-flip interaction. Compositing is left disabled for the soak test; root-only i915 error-state and SMART checks remain pending.
+- **2026-09-07** — Observed `kworker/u33:3+i915_flip` (PID 14654) stuck in `D` state for ~24 minutes with no matching kernel error. Disabling XFCE compositing made the worker disappear immediately; direct Intel rendering remained accelerated. This is the strongest evidence so far for an XFCE compositor/DRM page-flip interaction. Compositing is left disabled for the soak test. Root diagnostics confirmed `enable_psr=0`, `enable_dc=0`, `enable_hangcheck=Y`, `error_capture=Y`, and enabled GPU reset; no DRM or i915 error state was collected. SMART passed with no logged errors, but device statistics showed 5 reported uncorrectable errors and 3 command-completion resets.
 
 ---
 
@@ -210,8 +211,8 @@ findmnt /                                          # btrfs subvol=/@ (NOT .snaps
 
 ### 4.1 In progress
 
-- **Soak test** (started Sep 6): all idle-PM paths disabled (§2.1, §2.5, §2.6). Ghostty allowed. Run 3+ days.
-  - **Stable** → bisect which flag was the fixer; consider re-enabling cheap ones (WiFi powersave, blanking) one at a time
+- **Soak test** (started Sep 6; XFCE compositor disabled Sep 7): all idle-PM paths disabled (§2.1, §2.5, §2.6). Ghostty allowed. Run 7+ days.
+  - **Stable** → treat compositor-off as the practical workaround; only then consider re-enabling cheap mitigations one at a time
   - **Crash** → note: was screen blanked/recently woken? Try SysRq R-E-I-S-U-B. Then BIOS flash attempt
 
 ### 4.2 Pending decisions
