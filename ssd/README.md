@@ -1,6 +1,6 @@
 # SSD Replacement Baseline
 
-This section records the pre-upgrade performance baseline for the HP Pavilion 15-cc6xx. The measurements were taken on 2026-09-07 at 21:37 PDT on branch `glm-5.3`, commit `65299c05c8ee6229c14a00b99cdb36df0caa0bc4` before these notes were added.
+This section records the pre-upgrade performance baseline for the HP Pavilion 15-cc6xx. The measurements were taken on 2026-09-07 at 21:37 PDT on branch `luna-5.6`, commit `65299c05c8ee6229c14a00b99cdb36df0caa0bc4` before these notes were added.
 
 ## Executive Summary
 
