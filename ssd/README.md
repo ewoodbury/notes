@@ -113,6 +113,46 @@ This is a CPU/package reference and should not materially change with an SSD. Th
 ## Limitations
 
 - No root access was available for raw-device `hdparm` or SMART data.
-- `fio`, `hyperfine`, `sysbench`, `ioping`, and `stress-ng` were not installed, so this baseline does not include high-quality queue-depth, latency-distribution, or standardized whole-system scores.
+- At the initial capture, `fio`, `hyperfine`, `sysbench`, `ioping`, and `stress-ng` were not installed. The follow-up section adds `fio`, `hyperfine`, and `ioping`; `sysbench` and `stress-ng` remain unavailable.
 - Current zram usage was substantial, and system I/O pressure was high during inventory. This can affect application behavior and makes the baseline intentionally representative of the live system rather than a clean-room benchmark.
 - A replacement OS installation can change package versions, services, filesystem layout, swap configuration, and bootloader behavior. Those changes must be recorded separately from the storage-device effect.
+
+## Additional Tool-Assisted Baseline
+
+After the initial commit, `fio` 3.42, `ioping` 1.3, and `hyperfine` 1.20.0 became available. These results were collected on the same branch on 2026-09-07 shortly after the first baseline. The test file was `/home/ethan/ssd-baseline-temp/fio-test.bin`, 512 MiB, and all `fio` tests used direct I/O with `libaio`.
+
+### fio results
+
+| Workload | Result | Latency details |
+|---|---:|---|
+| Sequential write, 1 MiB, QD1 | 98.6 MiB/s, 98 IOPS | average 9.75 ms; p99 39.7 ms |
+| Sequential read, 1 MiB, QD1 | 69.6 MiB/s, 69 IOPS | average 14.36 ms; p95 11.34 ms; p99 16.45 ms |
+| Random read, 4 KiB, QD1 | 138 IOPS, 555 KiB/s | average 7.195 ms; p95 12.78 ms; p99 18.74 ms |
+| Random read, 4 KiB, QD32 | 138 IOPS, 556 KiB/s | average 230.88 ms; p95 384 ms; p99 531 ms |
+| Random 70% read / 30% write, 4 KiB, QD1 | 65 read IOPS + 29 write IOPS | read average 11.78 ms; write average 7.73 ms |
+| Sequential read, 1 MiB, QD32 | 30.8 MiB/s, 28 IOPS | average 1.077 s; p95 1.485 s; p99 1.552 s |
+
+The QD32 sequential read result was collected after the random and mixed workloads and is unusually low for sequential access. It is retained because it is an observed worst-case under the test sequence, but it should be repeated from an idle/rebooted state before treating it as the drive's sustained sequential capability. SMR background management, competing system I/O, and the current heavily used zram state may contribute.
+
+### ioping result
+
+```text
+ioping -D -c 30 -i 0 -s 4k /home/ethan/ssd-baseline-temp/fio-test.bin
+29 requests completed in 308.1 ms, 94 iops, 376.5 KiB/s
+min/avg/max/mdev = 712.6 us / 10.6 ms / 36.9 ms / 7.82 ms
+```
+
+This is a direct 4 KiB filesystem latency probe and is more representative than the original shell loop, though it remains a short single sample.
+
+### hyperfine results
+
+`hyperfine --warmup 2 --runs 10` measured version-command process initialization. These are warm-cache executable-start proxies, not full GUI cold starts:
+
+| Command | Mean | Standard deviation | Range |
+|---|---:|---:|---:|
+| `firefox --version` | 55.9 ms | 3.2 ms | 51.6-60.6 ms |
+| `chromium --version` | 66.9 ms | 7.6 ms | 57.4-79.4 ms |
+| `thunar --version` | 85.8 ms | 25.8 ms | 45.0-118.4 ms |
+| `ghostty --version` | 78.0 ms | 13.4 ms | 63.5-94.8 ms |
+
+The earlier one-shot values remain in the main table for continuity, but these repeated measurements should be used for the comparison unless a true cold-start workload is added after the reinstall.

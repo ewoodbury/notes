@@ -19,3 +19,16 @@ cpu	sha256_256B	156630.84	kB/s	openssl speed -seconds 5 sha256
 cpu	sha256_1KiB	237614.86	kB/s	openssl speed -seconds 5 sha256
 cpu	sha256_8KiB	275948.43	kB/s	openssl speed -seconds 5 sha256
 cpu	sha256_16KiB	284916.44	kB/s	openssl speed -seconds 5 sha256
+fio	seqwrite_1MiB_qd1	98.6	MiB/s	fio direct libaio 512MiB
+fio	seqread_1MiB_qd1	69.6	MiB/s	fio direct libaio 512MiB
+fio	randread_4KiB_qd1	138	IOPS	fio direct libaio 30s; avg latency 7.195ms; p99 18.744ms
+fio	randread_4KiB_qd32	138	IOPS	fio direct libaio 30s; avg latency 230.88ms; p99 531ms
+fio	randrw_70read_4KiB_qd1_read	65	IOPS	fio direct libaio 30s; avg latency 11.781ms
+fio	randrw_70read_4KiB_qd1_write	29	IOPS	fio direct libaio 30s; avg latency 7.729ms
+fio	seqread_1MiB_qd32	30.8	MiB/s	fio direct libaio 15s; collected after random workloads
+ioping	direct_4KiB_avg_latency	10.6	ms	ioping -D -c 30 -i 0
+ioping	direct_4KiB_p99_proxy	36.9	ms	maximum observed in 30 requests
+hyperfine	firefox_version_warm_mean	55.9	ms	2 warmups; 10 runs
+hyperfine	chromium_version_warm_mean	66.9	ms	2 warmups; 10 runs
+hyperfine	thunar_version_warm_mean	85.8	ms	2 warmups; 10 runs
+hyperfine	ghostty_version_warm_mean	78.0	ms	2 warmups; 10 runs
