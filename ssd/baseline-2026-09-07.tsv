@@ -1,0 +1,34 @@
+category	metric	value	unit	method_or_note
+storage	sequential_write_512MiB	69.5	MB/s	dd 1MiB blocks oflag=direct conv=fsync
+storage	sequential_read_512MiB	127	MB/s	dd 1MiB blocks iflag=direct
+storage	sequential_read_4KiB	59.7	MB/s	dd 4KiB blocks iflag=direct
+storage	random_4KiB_proxy	96.96	ops/s	1000 random direct dd requests; includes process overhead
+storage	random_4KiB_proxy_latency	10.313	ms/op	10.313 seconds total / 1000 requests; low fidelity
+filesystem	create_1000_empty_files	0.093	s	warm-cache shell loop
+filesystem	stat_1000_files	0.020	s	warm-cache shell loop
+filesystem	remove_1000_files	0.035	s	warm-cache shell loop
+boot	full_boot	31.534	s	systemd-analyze total
+boot	graphical_target	16.424	s	systemd-analyze userspace
+app	firefox_version_start	1.034	s	shell time firefox --version
+app	chromium_version_start	3.534	s	shell time chromium --version
+app	thunar_version_start	0.674	s	shell time thunar --version
+app	ghostty_version_start	0.554	s	shell time ghostty --version
+cpu	sha256_16B	20734.60	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_64B	64011.89	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_256B	156630.84	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_1KiB	237614.86	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_8KiB	275948.43	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_16KiB	284916.44	kB/s	openssl speed -seconds 5 sha256
+fio	seqwrite_1MiB_qd1	98.6	MiB/s	fio direct libaio 512MiB
+fio	seqread_1MiB_qd1	69.6	MiB/s	fio direct libaio 512MiB
+fio	randread_4KiB_qd1	138	IOPS	fio direct libaio 30s; avg latency 7.195ms; p99 18.744ms
+fio	randread_4KiB_qd32	138	IOPS	fio direct libaio 30s; avg latency 230.88ms; p99 531ms
+fio	randrw_70read_4KiB_qd1_read	65	IOPS	fio direct libaio 30s; avg latency 11.781ms
+fio	randrw_70read_4KiB_qd1_write	29	IOPS	fio direct libaio 30s; avg latency 7.729ms
+fio	seqread_1MiB_qd32	30.8	MiB/s	fio direct libaio 15s; collected after random workloads
+ioping	direct_4KiB_avg_latency	10.6	ms	ioping -D -c 30 -i 0
+ioping	direct_4KiB_p99_proxy	36.9	ms	maximum observed in 30 requests
+hyperfine	firefox_version_warm_mean	55.9	ms	2 warmups; 10 runs
+hyperfine	chromium_version_warm_mean	66.9	ms	2 warmups; 10 runs
+hyperfine	thunar_version_warm_mean	85.8	ms	2 warmups; 10 runs
+hyperfine	ghostty_version_warm_mean	78.0	ms	2 warmups; 10 runs
