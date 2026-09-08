@@ -1,0 +1,21 @@
+category	metric	value	unit	method_or_note
+storage	sequential_write_512MiB	69.5	MB/s	dd 1MiB blocks oflag=direct conv=fsync
+storage	sequential_read_512MiB	127	MB/s	dd 1MiB blocks iflag=direct
+storage	sequential_read_4KiB	59.7	MB/s	dd 4KiB blocks iflag=direct
+storage	random_4KiB_proxy	96.96	ops/s	1000 random direct dd requests; includes process overhead
+storage	random_4KiB_proxy_latency	10.313	ms/op	10.313 seconds total / 1000 requests; low fidelity
+filesystem	create_1000_empty_files	0.093	s	warm-cache shell loop
+filesystem	stat_1000_files	0.020	s	warm-cache shell loop
+filesystem	remove_1000_files	0.035	s	warm-cache shell loop
+boot	full_boot	31.534	s	systemd-analyze total
+boot	graphical_target	16.424	s	systemd-analyze userspace
+app	firefox_version_start	1.034	s	shell time firefox --version
+app	chromium_version_start	3.534	s	shell time chromium --version
+app	thunar_version_start	0.674	s	shell time thunar --version
+app	ghostty_version_start	0.554	s	shell time ghostty --version
+cpu	sha256_16B	20734.60	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_64B	64011.89	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_256B	156630.84	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_1KiB	237614.86	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_8KiB	275948.43	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_16KiB	284916.44	kB/s	openssl speed -seconds 5 sha256
