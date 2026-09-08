@@ -1,4 +1,10 @@
-# SSD Upgrade — "Before" Benchmark Baseline (HDD)
+# SSD Upgrade — "Before" Benchmark Baseline (HDD) — run `glm-5.3`
+
+> Separate concurrent baseline run on branch `glm-5.3`. Do not mix with the
+> `luna-5.6` run in [`ssd/README.md`](../README.md) /
+> [`ssd/baseline-2026-09-07.tsv`](../baseline-2026-09-07.tsv) — different
+> methods (fio vs dd) and different system states. Compare after-upgrade runs
+> against each baseline individually.
 
 Date: 2026-09-07 · Before: Seagate ST1000LM035 1TB 5400rpm SMR HDD → After: new SSD
 OS: CachyOS, kernel 6.18.48-1-cachyos-lts · i7-8550U · 12GB RAM + 11.6G zram
