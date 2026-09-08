@@ -1,0 +1,16 @@
+=== SNAPSHOT $(date -Is) ===
+ 21:45:04 up 21:46,  1 user,  load average: 2.05, 2.17, 1.75
+               total        used        free      shared  buff/cache   available
+Mem:            11Gi       6.5Gi       2.6Gi       303Mi       2.7Gi       5.1Gi
+Swap:           11Gi       7.3Gi       4.2Gi
+150
+NAME       ALGORITHM DISKSIZE DATA COMPR TOTAL STREAMS MOUNTPOINT
+/dev/zram0 zstd         11.6G 6.8G  2.3G  2.4G         [SWAP]
+--- vmstat 5s ---
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+ 2  8 7699120 2677120   60 2880308  51  151   212   418 1025    3  3  1 64 32  0  0
+ 2  8 7699072 2640484   60 2920412  48    0    48     8 5974 11464 23 3 21 53  0  0
+ 3  8 7699044 2649292   60 2911900  28    0    28   756 6684 12191 27 5 14 54  0  0
+ 2  8 7699040 2649284   60 2911720   4    0     4     4 6729 11629 29 5 16 51  0  0
+ 3  8 7699016 2647216   60 2907648  24    0    24     4 6850 11974 29 5 25 41  0  0
