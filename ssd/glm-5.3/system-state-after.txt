@@ -1,0 +1,16 @@
+=== AFTER SNAPSHOT 2026-09-12T14:30:43-07:00 ===
+ 14:30:43 up 7 min,  1 user,  load average: 1.73, 1.87, 1.00
+               total        used        free      shared  buff/cache   available
+Mem:            11Gi       6.1Gi       1.8Gi       1.2Gi       4.8Gi       5.5Gi
+Swap:           11Gi       5.0Mi        11Gi
+150
+NAME       ALGORITHM DISKSIZE DATA COMPR TOTAL STREAMS MOUNTPOINT
+/dev/zram0 zstd         11.6G   5M  1.1M  2.4M         [SWAP]
+--- vmstat 5s ---
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+ 3  4   5104 1921920  8392 5054312   4   15  5513   625 6721   18 21  4 49 26  0  0
+ 0  4   5084 1920512  8392 5052332  20    0    20     8 2311 6675  5  2 47 47  0  0
+ 2  3   5084 1921672  8392 5054384   0    0     0     4 2986 7536  6  2 56 35  0  0
+ 1  4   5084 1926548  8392 5054224   0    0     0     4 2651 7379  5  3 57 35  0  0
+ 1  4   5084 1927464  8392 5052408   0    0     0     4 2464 7360  4  2 58 35  0  0

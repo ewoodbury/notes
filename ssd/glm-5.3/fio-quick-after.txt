@@ -1,0 +1,14 @@
+seq-write: (g=0): rw=write, bs=(R) 1024KiB-1024KiB, (W) 1024KiB-1024KiB, (T) 1024KiB-1024KiB, ioengine=psync, iodepth=1
+seq-write: Laying out IO file (1 file / 2048MiB)
+seq-write: (groupid=0, jobs=1): err= 0: pid=8295: Sat Sep 12 14:31:10 2026
+  write: IOPS=247, BW=248MiB/s (260MB/s)(2048MiB/8271msec)
+   iops        : min=  196, max=  278, avg=248.00, stdev=22.73, samples=16
+seq-read: (g=0): rw=read, bs=(R) 1024KiB-1024KiB, (W) 1024KiB-1024KiB, (T) 1024KiB-1024KiB, ioengine=psync, iodepth=1
+seq-read: Laying out IO file (1 file / 2048MiB)
+seq-read: (groupid=0, jobs=1): err= 0: pid=8368: Sat Sep 12 14:31:22 2026
+  read: IOPS=307, BW=307MiB/s (322MB/s)(2048MiB/6669msec)
+   iops        : min=  302, max=  326, avg=307.08, stdev= 7.47, samples=13
+  read: IOPS=4657, BW=18.2MiB/s (19.1MB/s)(273MiB/15001msec)
+   iops        : min= 3966, max= 5082, avg=4657.73, stdev=273.00, samples=30
+  write: IOPS=4628, BW=18.1MiB/s (19.0MB/s)(271MiB/15001msec)
+   iops        : min= 3900, max= 5050, avg=4629.27, stdev=271.28, samples=30
