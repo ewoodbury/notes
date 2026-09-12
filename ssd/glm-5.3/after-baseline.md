@@ -70,8 +70,12 @@ latency comparison.
 
 ## SMART
 
-Pending — new drive `sudo smartctl -H -A /dev/sdb` output to be appended to
-`smartctl-after.txt`.
+Full output in `smartctl-after.txt`. Health **PASSED**, effectively factory-fresh:
+
+- 1 power-on hour, 2 power cycles; wear-out counters all zero
+- 0 reallocated / 0 pending-equivalent / 0 uncorrectable / 0 CRC errors
+- 100% reserved space remaining (attr 232), Total LBAs Written: 38
+- Temp 40°C (idle, consistent with the old HDD's thermal profile)
 
 ## Raw outputs (this directory)
 
