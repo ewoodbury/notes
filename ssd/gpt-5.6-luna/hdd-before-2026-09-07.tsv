@@ -15,6 +15,10 @@ app	thunar_version_start	0.674	s	shell time thunar --version one-shot
 app	ghostty_version_start	0.554	s	shell time ghostty --version one-shot
 cpu	sha256_8KiB	275948.43	kB/s	openssl speed -seconds 5 sha256
 cpu	sha256_16KiB	284916.44	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_16B	20734.60	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_64B	64011.89	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_256B	156630.84	kB/s	openssl speed -seconds 5 sha256
+cpu	sha256_1KiB	237614.86	kB/s	openssl speed -seconds 5 sha256
 fio	seqwrite_1MiB_qd1	98.6	MiB/s	fio direct libaio 512MiB
 fio	seqread_1MiB_qd1	69.6	MiB/s	fio direct libaio 512MiB
 fio	randread_4KiB_qd1	138	IOPS	fio direct libaio 30s; avg latency 7.195ms; p99 18.744ms
