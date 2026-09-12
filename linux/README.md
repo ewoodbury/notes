@@ -218,7 +218,7 @@ findmnt /                                          # btrfs subvol=/@ (NOT .snaps
 ### 4.2 Pending decisions
 
 1. **BIOS update** — check support.hp.com → "15-cc6xx" → BIOS section for >F.22 and changelog (ACPI/power fixes = strong reason). Flash route (Linux-only machine): HP USB method (FAT32 stick, `Win+B` at power-on) or Windows install. Small brick risk on old hardware — weigh carefully.
-2. **SSD upgrade** (~$90 Kingston A400 480 GB 2.5" SATA, or ~$190 WD SA510 M.2 SATA to keep 1 TB HDD as data drive) — **only after stability confirmed**. Fixes SMR-induced UI stalls (installs crawling), NOT the crashes. NVMe will not work (SATA-only M.2).
+2. **SSD upgrade** — **DONE 2026-09-12**: Timetec 35TT2280SATA-512GB M.2 SATA installed and OS cloned over; HDD retained as parked cold-storage fallback. Full record: [ssd-upgrade-2026-09-12.md](ssd-upgrade-2026-09-12.md)
 3. **RAM** — if any future doubt: matched 8 GB DDR4-2400/2666 SO-DIMM (e.g. Samsung M471A1K43CB1-CTD, ~$25-40) replacing the Kingston 4 GB → matched 8+8=16 GB.
 4. **If board/EC verdict** — repair economics conversation before any purchase.
 
