@@ -26,7 +26,7 @@ Purpose: complete record of the system configuration, the hard-freeze issue inve
 | Layer | Detail |
 |---|---|
 | OS | CachyOS (Arch-based, rolling). Fresh install 2026-08-30 |
-| Kernels | `linux-cachyos` 7.2.2 (tuned, default per BOOT_ORDER) and `linux-cachyos-lts` 6.18.x — **both installed; daily-driving LTS** |
+| Kernels | `linux-cachyos` 7.2.3 (tuned, default per BOOT_ORDER) and `linux-cachyos-lts` 6.18.x — **both installed; daily-driving LTS** |
 | DE | XFCE 4.x on X11, `lightdm` display manager, `xfce4-screensaver`, `xfce4-power-manager` |
 | Bootloader | **Limine** 12.6.1 via `limine-mkinitcpio-hook` 1.37.1; ESP mounted at `/boot` (FAT32) |
 | Snapshots | btrfs + `snapper` (`snap-pac`, `cachyos-snapper-support`) + `limine-snapper-sync` (bootable snapshots, history on ESP). Timeline snapshots: **off**; pacman pre/post snapshots only, `NUMBER_LIMIT=50` |
@@ -35,7 +35,8 @@ Purpose: complete record of the system configuration, the hard-freeze issue inve
 | Security | `ufw` active (mcast noise in logs is normal) |
 | Process tuning | `ananicy-cpp` (CachyOS default) |
 | Shell | fish (CachyOS config) + zsh available; terminal: **ghostty** 1.3.1 (GPU-accelerated, OpenGL) |
-| Other installed | `opencode`, `fwupd`, `memtest86+` 7.20, ghostty shell integration |
+| Other installed | `opencode`, `opencode-desktop-bin` 1.18.25 (AUR build), `fwupd`, `memtest86+` 7.20, ghostty shell integration, `chromium` 152 (v3-optimized mirror), `cursor-bin` 3.18.9 (CachyOS repo), `yay` 13.0.1 (built from source, not AUR helper pkg), `goose-desktop-bin` 1.49.0 (AUR), `flatpak` |
+| Dotfiles / workspace | `~/.bashrc`, `~/.config/zellij`, alacritty config symlinked into separate `~/projects/dotfiles` git repo; zellij layouts `z2`/`z3` (2/3-pane side-by-side) + `agent` wrapper (→ `~/.local/bin/agent`, launches opencode) |
 
 ### 1.3 Boot structure (Limine)
 
@@ -126,13 +127,35 @@ wifi.powersave = 2
 - **Screensaver: disabled** (auto-lock off; manual `xflock4` still available)
 - **XFCE compositor: disabled** on Sep 7 for an i915 page-flip isolation soak test (`xfconf-query -c xfwm4 -p /general/use_compositing -s false`)
 
-### 2.7 Not modified / defaults kept
+### 2.7 Caps Lock → Backspace — XFCE autostart
+
+Applied Sep 4. Session-level via `setxkbmap -option caps:backspace`; persisted via `~/.config/autostart/caps-to-backspace.desktop` re-applying at every XFCE login. XFCE's own XKB manager stays out of the way (disabled unless layouts are configured in Keyboard settings).
+
+- Verify: `setxkbmap -query` shows `caps:backspace` in options.
+- **TTY console not covered** — would need a separate console keymap.
+- Optional system-wide (greeter/other sessions): `sudo localectl set-x11-keymap us pc105 "" caps:backspace`.
+
+### 2.8 Trackpad — Elantech SMBus mode — `/etc/modprobe.d/touchpad.conf`
+
+Applied Sep 8 to fix janky scrolling (500ms initial delay, then over-sensitive full-page jumps — PS/2 coarse deltas + jump-discard errors on the Elan touchpad):
+
+```
+options psmouse elantech_smbus=1
+```
+
+Switches the touchpad from legacy PS/2 passthrough to native SMBus I²C mode → high-resolution multitouch. Persisted via initramfs `modconf` hook (no initramfs rebuild needed).
+
+- Verify after reboot: `grep -i elan /proc/bus/input/devices` → `Name="Elan Touchpad"` (NOT `ETPS/2`).
+- Harmless dmesg noise: `unexpected iap version 0x00` = firmware *updates* unsupported from Linux, nothing else.
+- Sensitivity left at libinput default (scroll distance 15); remaining app-side scroll feel (Firefox TUI ramp) is renderer behavior, not touchpad.
+
+### 2.9 Not modified / defaults kept
 
 - zram-generator: `zram-size = ram`, zstd, priority 100 (CachyOS default)
 - swappiness 150 (CachyOS default, good for zram)
 - No disk swap (SMR HDD would thrash)
 
-### 2.8 Verification commands (post-reboot checklist)
+### 2.10 Verification commands (post-reboot checklist)
 
 ```bash
 uname -r                                           # expect 6.18.x-cachyos-lts
@@ -144,6 +167,8 @@ iw dev wlan0 get power_save                        # Power save: off
 sysctl kernel.sysrq vm.dirty_bytes                 # 1 / 268435456
 cat /sys/power/mem_sleep                           # [s2idle]
 findmnt /                                          # btrfs subvol=/@ (NOT .snapshots overlay)
+grep -i elan /proc/bus/input/devices               # Elan Touchpad in SMBus mode (§2.8), NOT ETPS/2
+setxkbmap -query | grep caps                       # caps:backspace (§2.7)
 ```
 
 ---
@@ -203,22 +228,30 @@ findmnt /                                          # btrfs subvol=/@ (NOT .snaps
 - **2026-08-30 → 09-05** — 5.5 days stable. Lid-resume black screen reported; fixed with `mem_sleep_default=s2idle`.
 - **2026-09-05** — Crash #3 (idle, 5.5-day uptime). LTS default boot pursued (`ENABLE_SORT=yes` discovered as the missing piece); `libata.force=1.00:nolpm` added. Crashes #4 and #5 → kernel ruled out.
 - **2026-09-06** — memtest86+ 2 passes clean (RAM ruled out). Crash #6 (no ghostty, REISUB dead) → ghostty ruled out. Research: 15-cc6xx M.2 slot is **SATA-only**; BIOS F.22, line EOL. Applied full idle-PM shutdown: `intel_idle.max_cstate=3 pcie_aspm=off`, WiFi powersave off, screen blanking/screensaver disabled. **Soak test started Sep 6 ~23:58.**
-- **2026-09-07** — Observed `kworker/u33:3+i915_flip` (PID 14654) stuck in `D` state for ~24 minutes with no matching kernel error. Disabling XFCE compositing made the worker disappear immediately; direct Intel rendering remained accelerated. This is the strongest evidence so far for an XFCE compositor/DRM page-flip interaction. Compositing is left disabled for the soak test. Root diagnostics confirmed `enable_psr=0`, `enable_dc=0`, `enable_hangcheck=Y`, `error_capture=Y`, and enabled GPU reset; no DRM or i915 error state was collected. SMART passed with no logged errors, but device statistics showed 5 reported uncorrectable errors and 3 command-completion resets.
+- **2026-09-07** — Observed `kworker/u33:3+i915_flip` (PID 14654) stuck in `D` state for ~24 minutes with no matching kernel error. Disabling XFCE compositing made the worker disappear immediately; direct Intel rendering remained accelerated. This is the strongest evidence so far for an XFCE compositor/DRM page-flip interaction. Compositing is left disabled for the soak test. Root diagnostics confirmed `enable_psr=0`, `enable_dc=0`, `enable_hangcheck=Y`, `error_capture=Y`, and enabled GPU reset; no DRM or i915 error state was collected. SMART passed with no logged errors, but device statistics showed 5 reported uncorrectable errors and 3 command-completion resets. Tighter correlation on the pre-discovery crash: `xfsettingsd` restart at 23:21:48 → screensaver dialog at 23:21:52 → journal stop 9s later. Evidence caveat found: `nowatchdog` disables the kernel lockup detector, so "no log output" at freeze time is weaker evidence than assumed (i915 error capture was nevertheless enabled and still caught nothing).
 
 ---
 
 ## 4. Plan Going Forward
 
-### 4.1 In progress
+- **2026-09-06 → 09-12** — **Soak test PASSED: 5.51 days clean** (boot 2026-09-06 23:58:36 → clean systemd shutdown 2026-09-12 11:54:02 for the SSD install; verified from journal — proper unmount sequence, no panic/watchdog events). Compositor stayed disabled (`use_compositing=false` verified), full mitigation stack active, normal daily use including screensaver/display-wake events. Matches the previous best gap (crash #3, 5.5 days) — but this time *under* the full mitigation stack with the compositor off, i.e. the first full soak pass without a freeze. Not proof (crash #3 also reached 5.5 days), but the compositor-off workaround has now survived a full soak.
+- **2026-09-12** — Machine migrated to the Timetec SSD (see [ssd-upgrade-2026-09-12.md](ssd-upgrade-2026-09-12.md)); all mitigations carried over intact. Compositing remains disabled — gradual re-enable testing deferred.
 
-- **Soak test** (started Sep 6; XFCE compositor disabled Sep 7): all idle-PM paths disabled (§2.1, §2.5, §2.6). Ghostty allowed. Run 7+ days.
-  - **Stable** → treat compositor-off as the practical workaround; only then consider re-enabling cheap mitigations one at a time
-  - **Crash** → note: was screen blanked/recently woken? Try SysRq R-E-I-S-U-B. Then BIOS flash attempt
+---
+
+## 4. Plan Going Forward
+
+### 4.1 Soak test — CONCLUDED (passed)
+
+- **Result (Sep 12): 5.51 days stable** with compositor off + full mitigation stack (§2.1, §2.5, §2.6). Treat **compositor-off as the practical workaround**.
+- Next: optionally re-enable cheap mitigations **one at a time** (candidates in order: WiFi powersave on, screen blanking, then compositor last) with multi-day gaps; freeze pattern returns = re-disable that item.
+- Machine is now on the SSD; `libata.force=1.00:nolpm` was SMR-HDD-specific but is harmless to keep on the SSD (also covers the old HDD link).
+- **Crash** (if one ever returns) → note: was screen blanked/recently woken? Try SysRq R-E-I-S-U-B. Then BIOS flash attempt.
 
 ### 4.2 Pending decisions
 
 1. **BIOS update** — check support.hp.com → "15-cc6xx" → BIOS section for >F.22 and changelog (ACPI/power fixes = strong reason). Flash route (Linux-only machine): HP USB method (FAT32 stick, `Win+B` at power-on) or Windows install. Small brick risk on old hardware — weigh carefully.
-2. **SSD upgrade** (~$90 Kingston A400 480 GB 2.5" SATA, or ~$190 WD SA510 M.2 SATA to keep 1 TB HDD as data drive) — **only after stability confirmed**. Fixes SMR-induced UI stalls (installs crawling), NOT the crashes. NVMe will not work (SATA-only M.2).
+2. **SSD upgrade** — **DONE 2026-09-12**: Timetec 35TT2280SATA-512GB M.2 SATA installed and OS cloned over; HDD retained as parked cold-storage fallback. Full record: [ssd-upgrade-2026-09-12.md](ssd-upgrade-2026-09-12.md)
 3. **RAM** — if any future doubt: matched 8 GB DDR4-2400/2666 SO-DIMM (e.g. Samsung M471A1K43CB1-CTD, ~$25-40) replacing the Kingston 4 GB → matched 8+8=16 GB.
 4. **If board/EC verdict** — repair economics conversation before any purchase.
 
