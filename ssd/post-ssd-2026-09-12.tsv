@@ -1,0 +1,25 @@
+category	metric	before_hdd	after_ssd	unit	change_or_note
+storage	dd_sequential_write_512MiB	69.5	169	MB/s	2.43x
+storage	dd_sequential_read_512MiB	127	292	MB/s	2.30x
+storage	dd_sequential_read_4KiB	59.7	76.3	MB/s	1.28x
+fio	seqwrite_1MiB_qd1	98.6	224	MiB/s	2.27x
+fio	seqread_1MiB_qd1	69.6	279	MiB/s	4.01x
+fio	randread_4KiB_qd1_iops	138	7436	IOPS	53.9x
+fio	randread_4KiB_qd1_avg_latency	7.195	0.13351	ms	53.9x lower
+fio	randread_4KiB_qd1_p99	18.744	0.192	ms	97.6x lower
+fio	randread_4KiB_qd32_iops	138	55295	IOPS	401x
+fio	randread_4KiB_qd32_avg_latency	230.88	0.57804	ms	399x lower
+fio	randrw_70read_qd1_read_iops	65	5173	IOPS	79.6x
+fio	randrw_70read_qd1_write_iops	29	2219	IOPS	76.5x
+ioping	direct_4KiB_avg_latency	10.6	0.2107	ms	50.3x lower
+filesystem	create_1000_empty_files	0.093	0.029	s	3.21x faster
+filesystem	stat_1000_files	0.020	0.011	s	1.82x faster
+filesystem	remove_1000_files	0.035	0.017	s	2.06x faster
+app	firefox_version_warm_mean	55.9	27.4	ms	2.04x faster
+app	chromium_version_warm_mean	66.9	33.0	ms	2.03x faster
+app	thunar_version_warm_mean	85.8	25.9	ms	3.31x faster
+app	ghostty_version_warm_mean	78.0	37.8	ms	2.06x faster
+boot	graphical_target	16.424	9.487	s	1.73x faster
+boot	full_boot	31.534	35.313	s	not comparable; loader changed
+cpu	sha256_8KiB	275948.43	329992.55	kB/s	control metric, not storage effect
+cpu	sha256_16KiB	284916.44	380141.77	kB/s	control metric, not storage effect
