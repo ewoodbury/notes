@@ -63,6 +63,20 @@ After restoring, `Boot0002`/`Boot0000` work again and F9 offers the HDD's Limine
 
 - 2026-09-12: first SSD boot succeeded (via BootNext); ~8 hours of use, noticeably faster general responsiveness.
 - 2026-09-13: subsequent reboots landed on the HDD despite a correct BootOrder, exposing the HP firmware NVRAM rewrite behavior; resolved permanently by disabling the HDD ESP bootloader (see above). HDD fallback is now intentionally unavailable until restored via the commands above.
-- Old snapper snapshot menu entries in the cloned `limine.conf` point at snapshots that only exist on the HDD; ignore them on the SSD — the menu is regenerated after the first new snapshot.
+- Old snapper snapshot menu entries in the cloned `limine.conf` point at snapshots that only exist on the HDD; ignore them on the SSD — the menu is regenerated after the first new snapshot. (Confirmed 2026-09-13: `limine.conf` regenerated, snapshot entries now reference the SSD's fresh history.)
 - HDD `sda` is untouched: full OS, all 36 snapshots, and the old Limine entry (`Boot0002`) still boot it. Once the SSD setup is confirmed stable, decide whether to keep it as a data/backup drive or repurpose it.
 - Post-upgrade benchmark suite (per the comparison protocol in the README) has not yet been run.
+
+## Final verification (2026-09-13, after hard-power-loss boot incident)
+
+Full audit after the battery-drain reboot that briefly landed on the HDD:
+
+| Check | Result |
+|---|---|
+| NVRAM | **Only SSD entries remain**: `Boot0001` "Limine SSD" (first), `Boot0003` Timetec device fallback, firmware virtual entries. `Boot0000`/`Boot0002` (HDD) are gone from NVRAM entirely |
+| HDD ESP | Only `EFI/limine.off` + `EFI/BOOT.off` present — no bootable binaries |
+| Current boot | SSD confirmed (`root=UUID=33bbce2f…`, `/boot` = `sdb1`, `BootCurrent: 0001`) |
+| SSD-side configs intact | All 5 kernel mitigation flags, `kernel.sysrq=1`, `vm.dirty_bytes=268435456`, WiFi powersave off, XFCE compositor off, `limine.conf` + `/etc/default/limine` + fstab all on SSD UUIDs, subvol `/@` mounts |
+| HDD power | Re-parked to standby; `69-hdd-spindown.rules` present on the SSD install and timer re-armed (`-B 128 -S 60`). Disk wakes on manual ESP mounts and re-parks after 5 min |
+
+**Why this sticks regardless of firmware behavior**: every real NVRAM boot entry now points at the SSD, and the HDD has no bootable EFI path even if the firmware re-adds or reorders device entries. Failure of the SSD entry falls through to `Boot0003` (same disk). The HDD fallback is restorable in 30 seconds via the commands above if ever needed (e.g. SSD failure).
