@@ -2,6 +2,8 @@
 
 This section records the pre-upgrade performance baseline for the HP Pavilion 15-cc6xx. The measurements were taken on 2026-09-07 at 21:37 PDT on branch `luna-5.6`, commit `65299c05c8ee6229c14a00b99cdb36df0caa0bc4` before these notes were added.
 
+The upgrade itself was performed on 2026-09-12/13: see [migration-log-2026-09-13.md](migration-log-2026-09-13.md) for the install, in-place clone, and boot-configuration record.
+
 ## Executive Summary
 
 The current system disk is a Seagate ST1000LM035-1RK172 1 TB 5400 RPM SMR SATA HDD. It is the dominant expected storage bottleneck. The root and home filesystems are Btrfs on `/dev/sda2`; `/tmp` is tmpfs, so disk tests were deliberately run under `/home/ethan/ssd-baseline-temp` rather than `/tmp`.
