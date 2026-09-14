@@ -41,11 +41,28 @@ This document records the physical install, in-place clone, and boot-configurati
 
 - First boot was forced with `efibootmgr -n 0001` (one-shot BootNext).
 - A persistent `BootOrder` fix initially failed: `efibootmgr -o` rejected entry `2002`, a stale firmware virtual entry not present as a real variable, so the fix silently didn't apply and the machine kept booting the HDD's Limine (BootNext is consumed after one boot). This was misread at the time as firmware reordering.
-- Corrected on 2026-09-13 with `efibootmgr -o 0001,0003,0002,0000,2001,3002`. HP firmware was observed rewriting BootOrder once (inserting its virtual entries) but preserving the first entry's position, so the SSD-first order is expected to stick. Contingency if it does not: rename `/EFI/limine` on the HDD ESP (e.g. to `/EFI/limine.off`) so the firmware cannot boot the HDD's Limine at all — reversible, but sacrifices the HDD fallback boot.
+- A corrected `efibootmgr -o 0001,0003,0002,0000,2001,3002` was applied on 2026-09-13, but a reboot test proved the HP firmware **enforces its own stored boot order and rewrites NVRAM at every boot** (BootOrder was reverted to HDD-first, and the previously nonexistent `2002`/`2004` virtual entries reappeared in the list). `efibootmgr` order changes therefore do not persist on this machine.
+- **Final fix (2026-09-13): the HDD ESP's bootloader files were disabled** so the firmware cannot boot the HDD at all, making every boot path end at the SSD regardless of firmware ordering:
+  - `/mnt/hdd-esp` ← mount `sda1`
+  - `mv /mnt/hdd-esp/EFI/limine /mnt/hdd-esp/EFI/limine.off`
+  - `mv /mnt/hdd-esp/EFI/BOOT /mnt/hdd-esp/EFI/BOOT.off`
+  - `Boot0002` (Limine, HDD) and `Boot0000` (HDD fallback) now target nonexistent files and fail through to `Boot0001`/`Boot0003` (SSD).
+
+### Restoring the HDD fallback boot (if ever needed)
+
+```bash
+sudo mkdir -p /mnt/hdd-esp && sudo mount /dev/sda1 /mnt/hdd-esp
+sudo mv /mnt/hdd-esp/EFI/limine.off /mnt/hdd-esp/EFI/limine
+sudo mv /mnt/hdd-esp/EFI/BOOT.off /mnt/hdd-esp/EFI/BOOT
+sudo umount /mnt/hdd-esp
+```
+
+After restoring, `Boot0002`/`Boot0000` work again and F9 offers the HDD's Limine. The SSD will still boot as long as BootOrder or a BootNext points at it; re-disable (re-run the two `mv` commands above) afterwards if the firmware misbehaves again. Alternative firmware-level fix not yet attempted: F10 → Boot Options → UEFI Boot Order, placing the Timetec/Limine SSD entry first — HP's own setting is the source of truth and should stick.
 
 ## Outcome and follow-ups
 
 - 2026-09-12: first SSD boot succeeded (via BootNext); ~8 hours of use, noticeably faster general responsiveness.
+- 2026-09-13: subsequent reboots landed on the HDD despite a correct BootOrder, exposing the HP firmware NVRAM rewrite behavior; resolved permanently by disabling the HDD ESP bootloader (see above). HDD fallback is now intentionally unavailable until restored via the commands above.
 - Old snapper snapshot menu entries in the cloned `limine.conf` point at snapshots that only exist on the HDD; ignore them on the SSD — the menu is regenerated after the first new snapshot.
 - HDD `sda` is untouched: full OS, all 36 snapshots, and the old Limine entry (`Boot0002`) still boot it. Once the SSD setup is confirmed stable, decide whether to keep it as a data/backup drive or repurpose it.
 - Post-upgrade benchmark suite (per the comparison protocol in the README) has not yet been run.
