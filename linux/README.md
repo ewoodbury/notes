@@ -135,6 +135,45 @@ Applied Sep 4. Session-level via `setxkbmap -option caps:backspace`; persisted v
 - **TTY console not covered** — would need a separate console keymap.
 - Optional system-wide (greeter/other sessions): `sudo localectl set-x11-keymap us pc105 "" caps:backspace`.
 
+**Autorepeat fix (Sep 13).** The remap alone deletes one char per press: X leaves keycode 66 (Caps Lock) marked non-repeating even after remap, because lock keys normally shouldn't repeat. Also, `xset` isn't installed on this machine (`xorg-xset` not in the CachyOS base install). Fix: tiny X11 helper at `~/.local/bin/kbrepeat` flips per-key autorepeat ON for keycode 66 (the programmatic equivalent of `xset r 66`); wired in via `~/.local/bin/caps-to-backspace.sh` (runs `setxkbmap -option caps:backspace` then `kbrepeat on`), which is what the autostart `.desktop` entry now points at.
+
+Verify with:
+
+```
+setxkbmap -query | grep caps            # caps:backspace in options
+~/.local/bin/kbrepeat                    # "keycode 66 autorepeat: ON"
+```
+
+`kbrepeat` source (rebuild with `gcc -o kbrepeat kbrepeat.c -lX11`, needs `libx11` headers — `pacman -S libx11` if missing):
+
+```c
+#include <X11/Xlib.h>
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char **argv) {
+    Display *d = XOpenDisplay(NULL);
+    if (!d) { fprintf(stderr, "no display\n"); return 1; }
+    XKeyboardState st;
+    XGetKeyboardControl(d, &st);
+    int kc = 66;
+    int on = st.auto_repeats[kc / 8] & (1 << (kc % 8));
+    printf("keycode %d autorepeat: %s\n", kc, on ? "ON" : "OFF");
+    if (argc > 1 && strcmp(argv[1], "on") == 0) {
+        XKeyboardControl ctl;
+        ctl.key = kc;
+        ctl.auto_repeat_mode = AutoRepeatModeOn;
+        XChangeKeyboardControl(d, KBKey | KBAutoRepeatMode, &ctl);
+        XFlush(d);
+        XGetKeyboardControl(d, &st);
+        printf("after set: %s\n",
+               (st.auto_repeats[kc / 8] & (1 << (kc % 8))) ? "ON" : "OFF");
+    }
+    XCloseDisplay(d);
+    return 0;
+}
+```
+
 ### 2.8 Trackpad — Elantech SMBus mode — `/etc/modprobe.d/touchpad.conf`
 
 Applied Sep 8 to fix janky scrolling (500ms initial delay, then over-sensitive full-page jumps — PS/2 coarse deltas + jump-discard errors on the Elan touchpad):
