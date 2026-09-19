@@ -1,6 +1,6 @@
 # Battery Replacement & Capacity Test — 2026-09-19
 
-Companion to [migration-log-2026-09-13.md](migration-log-2026-09-13.md) and [linux/README.md](../linux/README.md). Records the battery replacement on the HP Pavilion 15-cc6xx, the verification of the new cell, and a full discharge capacity test with real delivered-energy measurement.
+Companion to [../ssd/migration-log-2026-09-13.md](../ssd/migration-log-2026-09-13.md) and [../linux/README.md](../linux/README.md). Records the battery replacement on the HP Pavilion 15-cc6xx, the verification of the new cell, and a full discharge capacity test with real delivered-energy measurement.
 
 ---
 
