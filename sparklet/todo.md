@@ -1,8 +1,12 @@
 # Sparklet Roadmap
 
 Lives in the notes repo (removed from the sparklet repository to keep it a clean, real project).
-Status: Phase 1 execution cleanup complete (PRs #10, #11, #13, #14; see phase-1-cleanup-plan.md).
+Status: Phase 1 cleanup complete (#10–#15). Phase 2 optimization complete (#16 width, #17
+map-side combine). Next is a vectorized physical kernel (see
+phase-3-vectorized-kernel.md) — columnar batches, morsels, then optional
+bytecode gen / AQE / native backend.
 Source of truth for the current architecture: sparklet docs/ARCHITECTURE.md.
+Proposal for the next engine: notes/sparklet/phase-3-vectorized-kernel.md.
 
 ## Project 4 - Hygiene, Fault Tolerance, and Reliability
 
@@ -15,8 +19,10 @@ Status after the Phase 1 execution cleanup:
 - [x] Centralize shuffle write policy with explicit `ShuffleWriteReason` ADT (tested priority selection)
 - [x] Erasure enforcement: `Wart.AsInstanceOf`/`Wart.Any` are compile errors; casts only at named boundaries (superseded the broader "remove all casts" framing — named boundaries are the accepted model)
 - [x] Consolidate wide-op detection & shuffle decision utilities into `PlanWide` + `Operation.canBypassShuffle` + `ShuffleWriteReason`
-- [ ] Enrich partition metadata (`PartitioningInfo`): partitioner, distribution type, ordering tag
-  - Why: `Partitioning(byKey, count)` insufficient to decide shuffle reuse / ordering guarantees. Benefit: enables shuffle reuse, join strategy selection, sort correctness checks.
+- [ ] Enrich partition metadata (`PartitioningInfo`): distribution, ordering tag, **layout**
+  (`BoxedRows` vs `Columnar(batchSize)`). See phase-3-vectorized-kernel.md.
+  - Why: `Partitioning(byKey, count)` cannot describe hash vs range vs layout, so shuffle
+    reuse, join strategy, and a columnar backend have nothing to hang on.
 - [ ] Introduce typed `StageOp` / `StageChain` to remove the remaining erasure-heavy handlers
   - Why: stage transport is still `Partition[_]`-erased; handlers in StageExecutor/ShuffleHandler carry documented casts. Benefit: compile-time safety through the executor.
 - [ ] Strengthen `InputSource` typing (add `DataDescriptor` or parametric types) to reduce casts
@@ -24,7 +30,7 @@ Status after the Phase 1 execution cleanup:
 - [ ] Prepare physical plan abstraction layer (scaffold `PhysicalPlan` nodes) ahead of optimizer work
   - Benefit: enables projection/predicate pushdown, cost-based selection, adaptive re-planning.
 
-### Phase 3: Advanced Recovery & Speculative Execution
+### Fault tolerance (later; not the next engine phase)
 - [x] Task retry with exponential backoff (`RetryPolicy` + `TaskExecutionWrapper`), tested through `TaskScheduler.submit`
 - [x] Lineage recovery removed (Milestone 2): it could not safely reconstruct arbitrary user
   functions and was unreachable from the supported path. Any future recovery must retain
@@ -38,18 +44,57 @@ Status after the Phase 1 execution cleanup:
   - [ ] Chaos engineering approach to fault tolerance validation
   - [ ] Performance impact analysis under failure conditions
 
-### Optimization (near-term, after Phase 1 cleanup)
-Known gaps in the current engine, roughly by expected impact (see ARCHITECTURE.md):
-- [ ] Widen aggregation outputs: `groupByKey`/`reduceByKey`/`cogroup`/`sortBy` currently
-  collapse to one output partition (joins already run per-partition in parallel)
-- [ ] Map-side combine for `reduceByKey` (shuffle partial aggregates instead of raw records)
-- [ ] Cross-branch dedup (structural hashing / CSE): reusing a DistCollection in two places
-  recomputes it; at most one shuffle write per stage (diamond hazard)
-- [ ] Predicate/projection pushdown via the `PhysicalPlan` layer
-- [ ] True typed sort-merge join (current implementation groups by key with a hash-code
-  ordering; correct by key equality, not a real merge)
-- [ ] Benchmark harness (measure planning overhead, iterator overhead, shuffle cost,
-  scheduling overhead, allocation pressure separately)
+### Optimization (Phase 2 — done)
+- [x] Widen aggregation outputs: `groupByKey`/`reduceByKey`/`cogroup`/`sortBy`
+  - Merged: https://github.com/ewoodbury/sparklet/pull/16
+- [x] Map-side combine for `reduceByKey`
+  - Merged: https://github.com/ewoodbury/sparklet/pull/17
+
+### Physical kernel (Phase 3 — next)
+
+Plan: phase-3-vectorized-kernel.md. Logical DistCollection stays. Physical currency
+becomes column batches; scheduling grain becomes morsels. SIMD in v1 is HotSpot
+auto-vec of `while` loops over primitive arrays, not Panama and not JNI.
+
+- [ ] PR B: `PartitioningInfo` on the existing row path
+  - [ ] `Distribution` (Unknown / Singleton / Hash / Range / RoundRobin)
+  - [ ] `OrderingTag`, `Layout` (`BoxedRows` | `Columnar(batchSize)`)
+  - [ ] Preserve #16 width and #17 combine; tests for Hash vs Range vs Unknown
+- [ ] PR C: `sparklet-columnar` module
+  - [ ] `ColumnBatch`, `Int32`/`Int64`/`Float64`/`Bool` columns, validity bitmap
+  - [ ] Dictionary UTF-8 for v1 strings; no struct/array/map yet
+  - [ ] Encode/decode `Seq[Int]`, `Seq[(Int,Int)]`; roundtrip + null tests
+- [ ] PR D: vectorized filter + project + benchmark skeleton
+  - [ ] Kernels as `while` over arrays (HotSpot auto-vec)
+  - [ ] Timed/JMH driver: filter+project vs Sparklet row `map`/`filter`
+- [ ] PR E: columnar hash aggregate + hash join
+  - [ ] Map-side combine = hash agg before exchange
+  - [ ] Same answers as DistCollection `reduceByKey` / `join` on int keys
+  - [ ] Benchmark vs Spark SQL `groupBy.agg` and `join` (WSCG, not RDD)
+- [ ] PR F: exchange + morsel scheduler
+  - [ ] Hash-partition batches into n buffers (local shuffle, no ser/de)
+  - [ ] Steal morsels across the worker pool; output width from `Distribution.Hash`
+  - [ ] Skew test (one heavy key)
+- [ ] PR G: DistCollection primitives select the columnar backend
+  - [ ] `DistCollection[Int]` / `[(Int,Int)]` take the new path when encodable
+  - [ ] Row path remains default for arbitrary `A`; existing tests stay green
+
+Deferred until after G (do not start as the next PR):
+- [ ] Cross-branch CSE (needs PartitioningInfo; diamond is still recomputed per branch)
+- [ ] Predicate/projection pushdown (needs a physical pipeline, not Spark-shaped node soup)
+- [ ] True sort-merge join (in-memory hash/radix first; current SMJ is hash grouping)
+- [ ] Bytecode gen of fused pipelines (answers WSCG-beats-unfused-vectorized)
+- [ ] AQE over morsel size / batch size / pipeline vs materialize
+- [ ] Panama Vector API kernel provider (JDK 21+, optional; incubating until Valhalla)
+- [ ] Native backend: Arrow batches to DataFusion/Velox (whole subplan, not per-op JNI)
+- [ ] Benchmark vs DuckDB / DataFusion on the same box (harness in D, full matrix with G)
+- [ ] DI / parallel tests (when globals block morsel work)
+- [ ] JoinExecutor/CogroupTask read-inside-task (#16 leftover; columnar exchange supersedes)
+
+### SIMD / kernel learning (side path, not blocking PRs B–G)
+- [ ] Confirm C2 auto-vec on v1 kernels (`PrintAssembly` / perf)
+- [ ] Scratch reimplement one kernel with Panama Vector API; compare ns/row
+- [ ] Only then: one op via FFM + Arrow, measure FFI vs 4K-batch cost
 
 ### Phase 4: Production Hardening & Observability (FUTURE)
 - [ ] Circuit breaker pattern for persistent failures
